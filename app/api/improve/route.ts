@@ -35,7 +35,9 @@ Tone: ${tone || 'Professional'}
 - Concise: Maximum brevity while preserving impact
 - Achievement-focused: Emphasize outcomes and results (but only from what's provided)`
 
-    const { output } = await generateText({
+    console.log('[v0] Starting generation with bullet:', bullet.trim())
+    
+    const result = await generateText({
       model: 'openai/gpt-4o-mini',
       output: Output.object({
         schema: improvedBulletsSchema,
@@ -46,7 +48,18 @@ Tone: ${tone || 'Professional'}
 Original bullet: "${bullet.trim()}"`,
     })
 
-    return Response.json({ improvements: output })
+    console.log('[v0] Generation result:', JSON.stringify(result, null, 2))
+    console.log('[v0] Output:', result.output)
+    
+    if (!result.output) {
+      console.log('[v0] No output received from model')
+      return Response.json(
+        { error: 'Failed to generate improvements. Please try again.' },
+        { status: 500 }
+      )
+    }
+
+    return Response.json({ improvements: result.output })
   } catch (error) {
     console.error('Error improving bullet:', error)
     return Response.json(

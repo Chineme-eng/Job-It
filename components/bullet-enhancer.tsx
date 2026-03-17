@@ -38,22 +38,33 @@ export function BulletEnhancer() {
     setError(null)
 
     try {
+      console.log("[v0] Submitting bullet:", { bullet, jobTitle, tone })
+      
       const response = await fetch("/api/improve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bullet, jobTitle, tone }),
       })
 
+      console.log("[v0] Response status:", response.status)
       const data = await response.json()
+      console.log("[v0] Response data:", data)
       
       if (!response.ok) {
         setError(data.error || "Failed to improve bullet. Please try again.")
         return
       }
       
+      if (!data.improvements) {
+        console.log("[v0] No improvements in response")
+        setError("No improvements received. Please try again.")
+        return
+      }
+      
+      console.log("[v0] Setting improvements:", data.improvements)
       setImprovements(data.improvements)
     } catch (error) {
-      console.error("Failed to improve bullet:", error)
+      console.error("[v0] Failed to improve bullet:", error)
       setError("Something went wrong. Please try again.")
     } finally {
       setIsLoading(false)
