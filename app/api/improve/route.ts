@@ -8,39 +8,50 @@ const improvedBulletsSchema = z.object({
 })
 
 export async function POST(req: Request) {
-  const { bullet, jobTitle, tone } = await req.json()
+  try {
+    const { bullet, jobTitle, tone } = await req.json()
 
-  const systemPrompt = `You are an expert resume writer and career coach. Your task is to improve resume bullet points to make them more impactful, professional, and compelling.
+    if (!bullet || typeof bullet !== 'string' || !bullet.trim()) {
+      return Response.json({ error: 'Please provide a resume bullet to improve' }, { status: 400 })
+    }
 
-Key principles:
-- Use strong action verbs at the beginning
-- Quantify achievements when possible (numbers, percentages, dollar amounts)
-- Focus on results and impact, not just responsibilities
-- Use industry-appropriate terminology
-- Keep language concise but powerful
-- Avoid passive voice and weak phrases
+    const systemPrompt = `You are an expert resume writer and career coach. Improve resume bullet points to be more impactful and professional.
 
-${jobTitle ? `The user is targeting a ${jobTitle} position, so tailor the language accordingly.` : ''}
+CRITICAL RULES:
+- DO NOT invent fake metrics, numbers, percentages, or dollar amounts that weren't in the original
+- DO NOT add specific achievements or experiences that weren't mentioned
+- Start with strong action verbs (Led, Developed, Implemented, Streamlined, etc.)
+- Use active voice, never passive voice
+- Keep outputs SHORT - each bullet should be 1-2 lines maximum
+- If the original has metrics, preserve them; if not, don't fabricate any
+- Make it job-ready and professional
+- Focus on impact and results implied by the original text
 
-Tone preference: ${tone || 'Professional'}
-- Professional: Balanced, polished language suitable for any industry
-- Stronger: More assertive action verbs and confident language
-- Concise: Extremely brief while maintaining impact
-- Achievement-focused: Heavy emphasis on metrics and measurable outcomes`
+${jobTitle ? `Target position: ${jobTitle} - use relevant industry terminology.` : ''}
 
-  const { output } = await generateText({
-    model: 'anthropic/claude-sonnet-4.6',
-    output: Output.object({
-      schema: improvedBulletsSchema,
-    }),
-    system: systemPrompt,
-    prompt: `Please improve this resume bullet point and provide three versions:
-1. A standard improved version
-2. An achievement-focused version with emphasis on metrics and outcomes
-3. A concise version that's shorter but impactful
+Tone: ${tone || 'Professional'}
+- Professional: Polished, industry-standard language
+- Stronger: Assertive action verbs and confident phrasing
+- Concise: Maximum brevity while preserving impact
+- Achievement-focused: Emphasize outcomes and results (but only from what's provided)`
 
-Original bullet: "${bullet}"`,
-  })
+    const { output } = await generateText({
+      model: 'openai/gpt-4o-mini',
+      output: Output.object({
+        schema: improvedBulletsSchema,
+      }),
+      system: systemPrompt,
+      prompt: `Improve this resume bullet point. Provide three versions - keep each SHORT (1-2 lines max). Do NOT invent metrics or experiences not in the original.
 
-  return Response.json({ improvements: output })
+Original bullet: "${bullet.trim()}"`,
+    })
+
+    return Response.json({ improvements: output })
+  } catch (error) {
+    console.error('Error improving bullet:', error)
+    return Response.json(
+      { error: 'Failed to improve bullet. Please try again.' },
+      { status: 500 }
+    )
+  }
 }

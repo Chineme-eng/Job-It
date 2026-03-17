@@ -28,12 +28,14 @@ export function BulletEnhancer() {
   const [isLoading, setIsLoading] = useState(false)
   const [improvements, setImprovements] = useState<Improvements | null>(null)
   const [copiedField, setCopiedField] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async () => {
     if (!bullet.trim()) return
 
     setIsLoading(true)
     setImprovements(null)
+    setError(null)
 
     try {
       const response = await fetch("/api/improve", {
@@ -43,9 +45,16 @@ export function BulletEnhancer() {
       })
 
       const data = await response.json()
+      
+      if (!response.ok) {
+        setError(data.error || "Failed to improve bullet. Please try again.")
+        return
+      }
+      
       setImprovements(data.improvements)
     } catch (error) {
       console.error("Failed to improve bullet:", error)
+      setError("Something went wrong. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -161,6 +170,13 @@ export function BulletEnhancer() {
           )}
         </Button>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
+          {error}
+        </div>
+      )}
 
       {/* Results Section */}
       {improvements && (
